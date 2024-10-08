@@ -1,0 +1,19 @@
+[package]
+name = "oxiswap-pair"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+
+
+[dev-dependencies]
+anyhow = { workspace = true }
+fuels = { workspace = true }
+tokio = { workspace = true }
+test-utils = { path = "../test-utils" }
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

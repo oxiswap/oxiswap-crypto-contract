@@ -1,0 +1,8 @@
+[project]
+authors = ["OxiSwap"]
+entry = "main.sw"
+license = "Apache-2.0"
+name = "fuelswap-router"
+
+[dependencies]
+libraries = { path = "../libraries" }

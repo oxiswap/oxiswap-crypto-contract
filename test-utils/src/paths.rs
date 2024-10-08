@@ -1,0 +1,9 @@
+pub const CRYPTO_FACTORY_BIN_PATH: &str = "../crypto-factory/out/debug/crypto-factory.bin";
+pub const CRYPTO_FACTORY_ABI_PATH: &str = "../crypto-factory/out/debug/crypto-factory-abi.json";
+pub const CRYPTO_ROUTER_BIN_PATH: &str = "../crypto-router/out/debug/crypto-router.bin";
+pub const CRYPTO_ROUTER_ABI_PATH: &str = "../crypto-router/out/debug/crypto-router-abi.json";
+pub const CRYPTO_PAIR_BIN_PATH: &str = "../crypto-pair/out/debug/crypto-pair.bin";
+pub const CRYPTO_PAIR_ABI_PATH: &str = "../crypto-pair/out/debug/crypto-pair-abi.json";
+pub const CRYPTO_FACTORY_STORAGE_PATH: &str = "../crypto-factory/out/debug/crypto-factory-storage_slots.json";
+pub const CRYPTO_ROUTER_STORAGE_PATH: &str = "../crypto-router/out/debug/crypto-router-storage_slots.json";
+pub const CRYPTO_PAIR_STORAGE_PATH: &str = "../crypto-pair/out/debug/crypto-pair-storage_slots.json";

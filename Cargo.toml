@@ -1,0 +1,21 @@
+[workspace]
+resolver = "2"
+members = [
+    "./crypto-pair",
+    "./crypto-router",
+    "./crypto-factory",
+    "./test-utils",
+]
+
+[workspace.package]
+authors = ["OxiSwap"]
+version = "0.5.0"
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.79.0"
+
+[workspace.dependencies]
+anyhow = "1.0.89"
+fuels = { version = "0.66.5", features = ["fuel-core-lib"] }
+tokio = { version = "1.40.0", features = ["rt", "macros"] }
+

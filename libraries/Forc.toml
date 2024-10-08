@@ -1,0 +1,6 @@
+[project]
+authors = ["OxiSwap"]
+entry = "interfaces.sw"
+license = "Apache-2.0"
+name = "libraries"
+
