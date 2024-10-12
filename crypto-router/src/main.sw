@@ -265,7 +265,8 @@ fn add_liquidity_internal(
     amount0_min: u64,
     amount1_min: u64
 ) -> (u64, u64) {
-    let factory_bits = factory_contract_id.into()
+    let factory_contract_id = storage.factory.read();
+    let factory_bits = factory_contract_id.into();
     let factory_contract = abi(Factory, factory_bits);
     let pair_asset_id = factory_contract.get_pair(asset0, asset1);
     if pair_asset_id.is_zero() {
