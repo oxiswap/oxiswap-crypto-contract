@@ -2,7 +2,7 @@ mod success {
 
     use crate::utils::setup;
     use fuels::{
-        types::{Address, AssetId},
+        types::{Address, AssetId, Identity},
         programs::calls::Execution
     };
     use test_utils::{
@@ -72,7 +72,7 @@ mod success {
         let amount1_desired = 1_000_000;
         let amount0_min = 0;
         let amount1_min = 0;
-        let to: Address = wallet.address().into();
+        let to: Identity = Identity::Address(wallet.address().into());
 
         let now = SystemTime::now();
         let deadline = now.duration_since(UNIX_EPOCH)

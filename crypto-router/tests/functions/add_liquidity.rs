@@ -5,6 +5,7 @@ mod success {
         types::{
             Address, 
             AssetId, 
+            Identity,
             bech32::Bech32ContractId
         },
         programs::calls::Execution
@@ -19,7 +20,7 @@ mod success {
 
     #[tokio::test]
     async fn test_add_liquidity() {
-        let (wallet, instance, asset_pairs, id) = setup().await;
+        let (wallet, instance, asset_pairs, _id) = setup().await;
         let factory_contract = deploy_factory(&wallet).await;
         let pair_contract = deploy_pair(&wallet).await;
 
@@ -97,7 +98,7 @@ mod success {
             amount1_desired, 
             amount0_min, 
             amount1_min, 
-            to, 
+            Identity::Address(to), 
             deadline
         ).await;
 
@@ -110,6 +111,8 @@ mod success {
             .await
             .unwrap()
             .value;
+
+        println!("Pair Asset Id:: {:?}", pair_asset_id);
 
         let assets_id = factory_contract.instance
             .methods()
@@ -132,7 +135,7 @@ mod success {
 
 
         let amount0_d2 = 912_000;
-        let amounts_out = match (assets_id.0) {
+        let amounts_out = match assets_id.0 {
             asset0 => amount0_d2 * reserves.value.1 / reserves.value.0,
             asset1 => amount0_d2 * reserves.value.0 / reserves.value.1,
             _ => 0,
@@ -150,22 +153,21 @@ mod success {
             amounts_out, 
             amount0_min, 
             amount1_min, 
-            to, 
+            Identity::Address(to),
+            // Identity::ContractId(get_factory),
             deadline
         ).await;
 
         println!("{:?}", liqui2_res.value);
 
-        // let router_ban = wallet
-        //     .try_provider()
-        //     .unwrap()
-        //     .get_contract_balances(&Bech32ContractId::from(pair_contract.id))
-        //     .await
-        //     .unwrap();
+        let router_ban = wallet
+            .provider()
+            .unwrap()
+            .get_contract_balances(&Bech32ContractId::from(pair_contract.id))
+            .await
+            .unwrap();
 
-        // println!("router balances {:?}", router_ban);
-
-
+        println!("router balances {:?}", router_ban);
 
     }
 }

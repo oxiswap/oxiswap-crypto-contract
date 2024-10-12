@@ -24,6 +24,9 @@ storage {
     all_pairs: StorageMap<u64, AssetId> = StorageMap {},
     get_pair: StorageMap<(AssetId, AssetId), AssetId> = StorageMap {},
     get_assets: StorageMap<AssetId, (AssetId, AssetId)> = StorageMap {},
+    asset_registry: StorageMap<(ContractId, b256), AssetId> = StorageMap {},
+    is_registered: StorageMap<AssetId, bool> = StorageMap {},
+    contract_subid_registry: StorageMap<AssetId, (ContractId, b256)> = StorageMap {},
     all_pairs_length: u64 = 0,
     is_initialized: bool = false
 }
@@ -50,6 +53,29 @@ impl Factory for Contract {
     #[storage(read)]
     fn get_assets(pair: AssetId) -> (AssetId, AssetId) {
         storage.get_assets.get(pair).try_read().unwrap_or((AssetId::zero(), AssetId::zero()))
+    }
+
+
+    #[storage(read)]
+    fn check_asset_registry(pair: AssetId, asset0: AssetId, asset1: AssetId) -> bool {
+        let asset0_b256: b256 = asset0.into();
+        let asset1_b256: b256 = asset1.into();
+        require(asset0_b256 != asset1_b256, FactoryErr::IdenticalAddresses);
+
+        let (sorted_asset0, sorted_asset1) = if asset0_b256 < asset1_b256 {
+            (asset0, asset1)
+        } else {
+            (asset1, asset0)
+        };
+
+        let pool_contract_id = storage.pool.read();
+        let salt = keccak256((sorted_asset0, sorted_asset1));
+        let registered = storage.is_registered.get(pair).try_read().unwrap_or(false);
+        let valid_pair = storage.asset_registry.get((pool_contract_id, salt)).try_read().unwrap_or(AssetId::zero());
+        let (stored_contract_id, stored_sub_id) = storage.contract_subid_registry.get(pair).try_read().unwrap_or((ContractId::zero(), b256::zero()));
+        let valid_contract_and_subid = (stored_contract_id == pool_contract_id) && (stored_sub_id == salt);
+
+        registered && pair == valid_pair && valid_contract_and_subid
     }
 
 
@@ -96,6 +122,9 @@ impl Factory for Contract {
         storage.get_assets.insert(new_pair_asset, asset_pair);
         storage.all_pairs.insert(old_length, new_pair_asset);
         storage.all_pairs_length.write(old_length + 1);
+        storage.asset_registry.insert((pool_contract_id, salt), new_pair_asset);
+        storage.is_registered.insert(new_pair_asset, true);
+        storage.contract_subid_registry.insert(new_pair_asset, (pool_contract_id, salt));
 
         let pool_id_b256: b256 = pool_contract_id.into();
         let pair_contract = abi(Pair, pool_id_b256);

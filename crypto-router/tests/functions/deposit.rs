@@ -5,8 +5,7 @@ mod success {
         interface::router::{constructor, deposit},
         setup::common::{deploy_factory, deploy_pair},
     };
-    use fuels::{programs::calls::Execution, types::AssetId};
-    use std::str::FromStr;
+    use fuels::programs::calls::Execution;
 
     #[tokio::test]
     async fn test_deposit() {

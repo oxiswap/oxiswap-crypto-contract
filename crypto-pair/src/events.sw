@@ -12,7 +12,7 @@ pub struct BurnEvent {
     pub sender: Identity,
     pub amount0: u64,
     pub amount1: u64,
-    pub to: Address,
+    pub to: Identity,
 }
 
 
@@ -22,7 +22,7 @@ pub struct SwapEvent {
     pub amount1_in: u64,
     pub amount0_out: u64,
     pub amount1_out: u64,
-    pub to: Address,
+    pub to: Identity,
 }
 
 

@@ -1,6 +1,7 @@
 use fuels::{
     prelude::{abigen, AssetId, Address, ContractId, WalletUnlocked, TxPolicies, CallParameters, VariableOutputPolicy},
     programs::responses::CallResponse,
+    types::Identity,
 };
 
 abigen!(
@@ -10,7 +11,7 @@ abigen!(
     ),
     Contract(
         name = "Pair",
-        abi = "./crypto-pair/out/debug/crypto-pair-abi.json"
+        abi = "./crypto-pair/out/debug/crypto-pairs-abi.json"
     ),
     Contract(
         name = "Router",
@@ -45,6 +46,8 @@ pub mod factory {
 
 
 pub mod pair {
+    use fuels::types::Identity;
+
     use super::*;
 
     pub async fn constructor(contract: &Pair<WalletUnlocked>, factory: ContractId) -> CallResponse<()> {
@@ -57,19 +60,22 @@ pub mod pair {
     }
 
 
-    pub async fn mint(contract: &Pair<WalletUnlocked>, pool: AssetId, to: Address, amount0: u64, amount1: u64, factory_contract: &Factory<WalletUnlocked>) -> CallResponse<u64> {
+    pub async fn mint(contract: &Pair<WalletUnlocked>, pool: AssetId, to: Identity, amount0: u64, amount1: u64, factory_contract: &Factory<WalletUnlocked>) -> CallResponse<u64> {
+        let tx_policies = TxPolicies::default().with_script_gas_limit(1_000_000);
+
         contract
             .methods()
             .mint(pool, to, amount0, amount1)
             .with_variable_output_policy(VariableOutputPolicy::Exactly(4))
             .with_contracts(&[factory_contract])
+            .with_tx_policies(tx_policies)
             .call()
             .await
             .unwrap()
     }
 
 
-    pub async fn burn(contract: &Pair<WalletUnlocked>, pool: AssetId, to: Address, amount: u64, factory_contract: &Factory<WalletUnlocked>) -> CallResponse<(u64, u64)> {
+    pub async fn burn(contract: &Pair<WalletUnlocked>, pool: AssetId, to: Identity, amount: u64, factory_contract: &Factory<WalletUnlocked>) -> CallResponse<(u64, u64)> {
         let tx_policies = TxPolicies::default();
         let call_param = CallParameters::new(amount, pool, 1_000_000);
 
@@ -87,7 +93,7 @@ pub mod pair {
     }
 
 
-    pub async fn swap(contract: &Pair<WalletUnlocked>, pool: AssetId, amount0_out: u64, amount1_out: u64, to: Address) -> CallResponse<()> {
+    pub async fn swap(contract: &Pair<WalletUnlocked>, pool: AssetId, amount0_out: u64, amount1_out: u64, to: Identity) -> CallResponse<()> {
         let tx_policies = TxPolicies::default();
 
         contract
@@ -153,7 +159,7 @@ pub mod router {
         amount1_desired: u64,
         amount0_min: u64,
         amount1_min: u64,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> CallResponse<(u64, u64, u64)> {
         let tx_policies = TxPolicies::default().with_script_gas_limit(10_000_000);
@@ -180,7 +186,7 @@ pub mod router {
         liquidity: u64,
         amount0_min: u64,
         amount1_min: u64,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> CallResponse<(u64, u64)> {
         let tx_policies = TxPolicies::default();
@@ -206,7 +212,7 @@ pub mod router {
         amount_in: u64,
         amount_out_min: u64,
         path: Vec<AssetId>,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> CallResponse<Vec<u64>> {
         let tx_policies = TxPolicies::default();
@@ -232,7 +238,7 @@ pub mod router {
         amount_out: u64,
         amount_in_max: u64,
         path: Vec<AssetId>,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> CallResponse<Vec<u64>> {
         let tx_policies = TxPolicies::default();

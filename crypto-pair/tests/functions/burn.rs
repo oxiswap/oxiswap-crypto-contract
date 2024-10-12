@@ -3,7 +3,8 @@ mod success {
     use crate::utils::setup;
     use fuels::{
         prelude::*, types::{bech32::Bech32ContractId, Address, AssetId},
-        programs::calls::Execution
+        programs::calls::Execution,
+        types::Identity,
     };
     use test_utils::{
         interface::{
@@ -16,13 +17,13 @@ mod success {
 
     #[tokio::test]
     async fn test_burn() {
-        let (wallet, instance, asset_pairs, id) = setup().await;
+        let (wallet, instance, asset_pairs, id, _providers) = setup().await;
         let factory_contract = deploy_factory(&wallet).await;
 
         constructor(&instance, factory_contract.id).await;
         let wallets = launch_custom_provider_and_get_wallets(WalletsConfig::default(), None, None).await.unwrap();
 
-        let to: Address = wallet.address().into();
+        let to: Identity = Identity::Address(wallet.address().into());
         let fac_fee_to: Address = wallets[0].address().into();
         factory_contract.instance
             .methods()

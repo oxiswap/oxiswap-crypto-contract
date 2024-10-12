@@ -11,4 +11,5 @@ pub enum BaseError {
     InsufficientPairInputAmount: (),
     K: (),
     Forbidden: (),
+    InvalidPairAssetId: (),
 }

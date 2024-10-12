@@ -10,7 +10,7 @@ mod success {
 
     #[tokio::test]
     async fn test_constructor() {
-        let (wallet, instance, _, _) = setup().await;
+        let (wallet, instance, _, _, _) = setup().await;
         let factory_contract = deploy_factory(&wallet).await;
 
         constructor(&instance, factory_contract.id).await;

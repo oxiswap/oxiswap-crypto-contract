@@ -24,7 +24,6 @@ use std::{
     hash::*,
     u128::U128,
     block::timestamp,
-    constants::ZERO_B256,
     primitive_conversions::{
         u64::*,
         u256::*
@@ -45,9 +44,6 @@ configurable {
 }
 
 storage {
-    name: StorageMap<AssetId, StorageString> = StorageMap {},
-    symbol: StorageMap<AssetId, StorageString> = StorageMap {},
-    decimals: StorageMap<AssetId, u8> = StorageMap {},
     owner: Address = Address::zero(),
     factory: ContractId = ContractId::zero(),
     block_timestamp_last: StorageMap<AssetId, u64> = StorageMap {},
@@ -152,7 +148,7 @@ impl Pair for Contract {
 
 
     #[storage(read, write)]
-    fn mint(pool: AssetId, to: Address, amount0: u64, amount1: u64) -> u64 {
+    fn mint(pool: AssetId, to: Identity, amount0: u64, amount1: u64) -> u64 {
         let pair = storage.pairs.get(pool).try_read().unwrap();
         let (asset0, reserve0) = (pair.asset0.id, pair.asset0.amount);
         let (asset1, reserve1) = (pair.asset1.id, pair.asset1.amount);
@@ -194,7 +190,7 @@ impl Pair for Contract {
         );
 
         mint(salt, liqui);
-        transfer(Identity::Address(to), pool, liqui);
+        transfer(to, pool, liqui);
         update(pool, reserve0 + amount0, reserve1 + amount1, reserve0, reserve1);
 
         if fee_on {
@@ -208,11 +204,11 @@ impl Pair for Contract {
         });
 
         liqui   
-        
     }
 
+
     #[payable, storage(read, write)]
-    fn burn(pool: AssetId, to: Address) -> (u64, u64) {
+    fn burn(pool: AssetId, to: Identity) -> (u64, u64) {
         let liquidity = this_balance(pool);
 
         let pair = storage.pairs.get(pool).try_read().unwrap();
@@ -228,8 +224,8 @@ impl Pair for Contract {
         storage.total_supply.insert(pool, total_supply - liquidity);
         let salt = keccak256((asset0, asset1));
         burn(salt, liquidity);
-        transfer(Identity::Address(to), asset0, amount0);
-        transfer(Identity::Address(to), asset1, amount1);
+        transfer(to, asset0, amount0);
+        transfer(to, asset1, amount1);
 
         storage.total_balances.insert(
             asset0,
@@ -264,19 +260,23 @@ impl Pair for Contract {
 
 
     #[payable, storage(read, write)]
-    fn swap(pool: AssetId, amount0_out: u64, amount1_out: u64, to: Address) {
+    fn swap(pool: AssetId, amount0_out: u64, amount1_out: u64, to: Identity) {
         require(amount0_out > 0 || amount1_out > 0, BaseError::InsufficientOutputAmount);
 
         let pair = storage.pairs.get(pool).try_read().unwrap();
         let (asset0, reserve0) = (pair.asset0.id, pair.asset0.amount);
         let (asset1, reserve1) = (pair.asset1.id, pair.asset1.amount);
         require(amount0_out < reserve0 && amount1_out < reserve1, BaseError::InsufficientLiquidity);
+        check_asset_registry(pool, asset0, asset1);
 
         let mut balance0 = 0;
         let mut balance1 = 0;
 
         {   
-            let to_b256: b256 = to.into();
+            let to_b256: b256 = match to {
+                Identity::Address(address) => address.into(),
+                Identity::ContractId(contract_id) => contract_id.into(),
+            };
             let asset0_b256: b256 = asset0.into();
             let asset1_b256: b256 = asset1.into();
             require(to_b256 != asset0_b256 && to_b256 != asset1_b256, BaseError::InvalidTo);
@@ -293,14 +293,14 @@ impl Pair for Contract {
                 new_reserve1 = reserve1 + deposit1;
                 storage.total_balances.insert(asset0, asset0_tb - amount0_out);
                 storage.total_balances.insert(asset1, asset1_tb + deposit1);
-                transfer(Identity::Address(to), asset0, amount0_out);
+                transfer(to, asset0, amount0_out);
             }
             if amount1_out > 0 {
                 new_reserve0 = reserve0 + deposit0;
                 new_reserve1 = reserve1 - amount1_out;
                 storage.total_balances.insert(asset0, asset0_tb + deposit0);
                 storage.total_balances.insert(asset1, asset1_tb - amount1_out);
-                transfer(Identity::Address(to), asset1, amount1_out);
+                transfer(to, asset1, amount1_out);
             }
             balance0 = new_reserve0;
             balance1 = new_reserve1;
@@ -330,15 +330,15 @@ impl Pair for Contract {
 
 
     #[storage(read)]
-    fn skim(pool: AssetId, to: Address) {
+    fn skim(pool: AssetId, to: Identity) {
         let pair = storage.pairs.get(pool).try_read().unwrap();
         let asset0 = pair.asset0.id;
         let asset1 = pair.asset1.id;
-        transfer(Identity::Address(to), asset0, this_balance(asset0) - storage.total_balances.get(asset0).try_read().unwrap());
-        transfer(Identity::Address(to), asset1, this_balance(asset1) - storage.total_balances.get(asset1).try_read().unwrap());
+        check_asset_registry(pool, asset0, asset1);
+
+        transfer(to, asset0, this_balance(asset0) - storage.total_balances.get(asset0).try_read().unwrap());
+        transfer(to, asset1, this_balance(asset1) - storage.total_balances.get(asset1).try_read().unwrap());
     }
-
-
 }
 
 
@@ -373,10 +373,12 @@ fn update(pool: AssetId, balance0: u64, balance1: u64, reserve0: u64, reserve1: 
 
 
 #[storage(read, write)]
-fn mint_fee(pool: AssetId, token0: AssetId, token1: AssetId, reserve0: u64, reserve1: u64) -> bool {
+fn mint_fee(pool: AssetId, asset0: AssetId, asset1: AssetId, reserve0: u64, reserve1: u64) -> bool {
     let factory_contract_id = storage.factory.read();
     let factory_bits = factory_contract_id.into();
     let factory_contract = abi(Factory, factory_bits);
+    require(factory_contract.check_asset_registry(pool, asset0, asset1), BaseError::InvalidPairAssetId);
+
     let fee_to = factory_contract.fee_to();
     let fee_on = !fee_to.is_zero();
     let mut k = storage.k_last.get(pool).try_read().unwrap_or(U128::zero());
@@ -394,7 +396,7 @@ fn mint_fee(pool: AssetId, token0: AssetId, token1: AssetId, reserve0: u64, rese
                 if liquidity > U128::zero() {
                     let liqui = liquidity.as_u64().unwrap();
                     storage.total_supply.insert(pool, total_supply + liqui);
-                    mint(keccak256((token0, token1)), liqui);
+                    mint(keccak256((asset0, asset1)), liqui);
                     transfer(Identity::Address(fee_to), pool, liqui);
                 }
             }
@@ -407,3 +409,11 @@ fn mint_fee(pool: AssetId, token0: AssetId, token1: AssetId, reserve0: u64, rese
     fee_on
 }
 
+
+#[storage(read)]
+fn check_asset_registry(pool: AssetId, asset0: AssetId, asset1: AssetId) {
+    let factory_contract_id = storage.factory.read();
+    let factory_bits = factory_contract_id.into();
+    let factory_contract = abi(Factory, factory_bits);    
+    require(factory_contract.check_asset_registry(pool, asset0, asset1), BaseError::InvalidPairAssetId);
+}

@@ -22,16 +22,16 @@ abi Pair {
     fn initialize(pool: AssetId, token0: AssetId, token1: AssetId);
 
     #[storage(read, write)]
-    fn mint(pool: AssetId, to: Address, amount0: u64, amount1: u64) -> u64;
+    fn mint(pool: AssetId, to: Identity, amount0: u64, amount1: u64) -> u64;
 
     #[payable, storage(read, write)]
-    fn burn(pool: AssetId, to: Address) -> (u64, u64);
+    fn burn(pool: AssetId, to: Identity) -> (u64, u64);
 
     #[payable, storage(read, write)]
-    fn swap(pool: AssetId, amount0_out: u64, amount1_out: u64, to: Address);
+    fn swap(pool: AssetId, amount0_out: u64, amount1_out: u64, to: Identity);
 
     #[storage(read)]
-    fn skim(pool: AssetId, to: Address);
+    fn skim(pool: AssetId, to: Identity);
 }
 
 
@@ -44,6 +44,9 @@ abi Factory {
     
     #[storage(read)]
     fn get_assets(pair: AssetId) -> (AssetId, AssetId);
+
+    #[storage(read)]
+    fn check_asset_registry(pair: AssetId, asset0: AssetId, asset1: AssetId) -> bool;
 
     #[storage(read)]
     fn fee_to() -> Address;
@@ -77,7 +80,7 @@ abi Router {
         amount1_desired: u64, 
         amount0_min: u64, 
         amount1_min: u64,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> (u64, u64, u64);
 
@@ -88,7 +91,7 @@ abi Router {
         liquidity: u64,
         amount0_min: u64,
         amount1_min: u64,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> (u64, u64);
 
@@ -103,7 +106,7 @@ abi Router {
         amount_in: u64,
         amount_out_min: u64,
         path: Vec<AssetId>,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> Vec<u64>;
 
@@ -112,7 +115,7 @@ abi Router {
         amount_out: u64,
         amount_in_max: u64,
         path: Vec<AssetId>,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> Vec<u64>;
 

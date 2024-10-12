@@ -3,6 +3,7 @@ use test_utils::{
     interface::factory::{constructor, create_pair},
     setup::common::deploy_pair,
 };
+use fuels::programs::calls::Execution;
 
 
 mod success {
@@ -24,6 +25,17 @@ mod success {
 
         let response = create_pair(&instance, asset_pairs[0].0, asset_pairs[0].1, &pair_contract.instance).await;
         
-        print!("{:?}", response.value);
+        println!("{:?}", response.value);
+        
+        let check_registry = instance
+            .methods()
+            .check_asset_registry(response.value, asset_pairs[0].0, asset_pairs[0].1)
+            .simulate(Execution::StateReadOnly)
+            .await
+            .unwrap()
+            .value;
+
+        println!("{:?}", check_registry);
+            
     }
 }

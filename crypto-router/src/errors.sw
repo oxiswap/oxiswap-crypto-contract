@@ -4,6 +4,7 @@ pub enum RouterErr {
     Expired: (),
     Initialized: (),
     InvalidAssetId: (),
+    InvalidPairAssetId: (),
     InvalidPath: (),
     InsufficientBalance: (),
     IdenticalAddresses: (),

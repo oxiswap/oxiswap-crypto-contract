@@ -2,7 +2,7 @@ mod success {
 
     use crate::utils::setup;
     use fuels::{
-        types::{bech32::Bech32ContractId, Address, AssetId},
+        types::{bech32::Bech32ContractId, Address, AssetId, Identity},
         programs::calls::Execution
     };
     use test_utils::{
@@ -84,7 +84,7 @@ mod success {
         let amount1_desired = 2_000_000_000_000;
         let amount0_min = 0;
         let amount1_min = 0;
-        let to: Address = wallet.address().into();
+        let to: Identity = Identity::Address(wallet.address().into());
 
         println!("{:?}", (asset0, asset1));
         // println!("{:?}", wallet.get_balances().await.unwrap());

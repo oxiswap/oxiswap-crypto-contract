@@ -22,7 +22,6 @@ use std::{
     hash::*,
     u128::U128,
     block::timestamp,
-    constants::ZERO_B256,
     primitive_conversions::{
         u64::*,
         u256::*
@@ -112,7 +111,9 @@ impl Router for Contract {
         require(old_deposit >= amount, RouterErr::InsufficientBalance);
 
         let new_deposit = old_deposit - amount;
-        storage.deposits.insert((sender, asset_id), new_deposit);
+        if new_deposit != old_deposit {
+            storage.deposits.insert((sender, asset_id), new_deposit);
+        }
         
         transfer(sender, asset_id, amount);
 
@@ -133,7 +134,7 @@ impl Router for Contract {
         amount1_desired: u64,
         amount0_min: u64,
         amount1_min: u64,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> (u64, u64, u64) {
         ensure(deadline);
@@ -172,7 +173,7 @@ impl Router for Contract {
         liquidity: u64,
         amount0_min: u64,
         amount1_min: u64,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> (u64, u64) {
         ensure(deadline);
@@ -203,7 +204,7 @@ impl Router for Contract {
         amount_in: u64,
         amount_out_min: u64,
         path: Vec<AssetId>,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> Vec<u64> {
         ensure(deadline);
@@ -223,7 +224,7 @@ impl Router for Contract {
         amount_out: u64,
         amount_in_max: u64,
         path: Vec<AssetId>,
-        to: Address,
+        to: Identity,
         deadline: u64
     ) -> Vec<u64> {
         ensure(deadline);
@@ -264,8 +265,10 @@ fn add_liquidity_internal(
     amount0_min: u64,
     amount1_min: u64
 ) -> (u64, u64) {
-    let factory_contract = abi(Factory, storage.factory.read().bits());
-    if factory_contract.get_pair(asset0, asset1).is_zero() {
+    let factory_bits = factory_contract_id.into()
+    let factory_contract = abi(Factory, factory_bits);
+    let pair_asset_id = factory_contract.get_pair(asset0, asset1);
+    if pair_asset_id.is_zero() {
         factory_contract.create_pair(asset0, asset1);
     }
 
@@ -297,7 +300,7 @@ fn add_liquidity_internal(
 
 
 #[storage(read, write)]
-fn swap_internal(amounts: Vec<u64>, path: Vec<AssetId>, to: Address) {
+fn swap_internal(amounts: Vec<u64>, path: Vec<AssetId>, to: Identity) {
     let mut i = 0;
     while i < path.len() - 1 {
         let (input, output) = (path.get(i).unwrap(), path.get(i+1).unwrap());
@@ -313,7 +316,7 @@ fn swap_internal(amounts: Vec<u64>, path: Vec<AssetId>, to: Address) {
 
         let pool = storage.pool.read();
         let new_to = if i < path.len() - 2 {
-            Address::from(pool.bits()) 
+            Identity::ContractId(pool) 
         } else {
             to
         };

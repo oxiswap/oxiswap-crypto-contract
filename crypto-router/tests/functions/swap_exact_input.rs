@@ -2,11 +2,11 @@ mod success {
 
     use crate::utils::setup;
     use fuels::{
-        types::{bech32::Bech32ContractId, Address, AssetId},
+        types::{bech32::Bech32ContractId, Address, AssetId, Identity},
         programs::calls::Execution
     };
     use test_utils::{
-        interface::{pair, router::{add_liquidity, constructor, deposit, swap_exact_input}},
+        interface::router::{add_liquidity, constructor, deposit, swap_exact_input},
         setup::common::{deploy_factory, deploy_pair},
     };
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -16,7 +16,7 @@ mod success {
 
     #[tokio::test]
     async fn test_swap_exact_input() {
-        let (wallet, instance, asset_pairs, id) = setup().await;
+        let (wallet, instance, asset_pairs, _id) = setup().await;
         let factory_contract = deploy_factory(&wallet).await;
         let pair_contract = deploy_pair(&wallet).await;
 
@@ -75,7 +75,7 @@ mod success {
         let amount1_desired = 1_000_000_000;
         let amount0_min = 0;
         let amount1_min = 0;
-        let to: Address = wallet.address().into();
+        let to: Identity = Identity::Address(wallet.address().into());
 
         let now = SystemTime::now();
         let deadline = now.duration_since(UNIX_EPOCH)
